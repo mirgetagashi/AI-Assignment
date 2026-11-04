@@ -5,7 +5,7 @@ import sys
 import time
 
 
-SEED = 0
+SEED = 0  # fixed seed: the shuffled order is the same on every run
 
 
 class LatinSquareSearch:
@@ -15,12 +15,13 @@ class LatinSquareSearch:
         self.grid = [[0] * n for _ in range(n)]
         self.row_used = [0] * n
         self.col_used = [0] * n
+        # Reduced form: first row and first column = 1..n (renaming numbers / reordering rows loses no solution)
         for c in range(n):
             self._put(0, c, c + 1)
         for r in range(1, n):
             self._put(r, 0, r + 1)
         self.cells = [(r, c) for r in range(1, n) for c in range(1, n)]
-        self.depth = len(self.cells)
+        self.depth = len(self.cells)   # every solution is at depth (n-1)^2
         self.nodes = 0
 
     def _put(self, r, c, v):
@@ -36,7 +37,7 @@ class LatinSquareSearch:
     def _candidates(self, k, rng):
         r, c = self.cells[k]
         used = self.row_used[r] | self.col_used[c]
-        values = [v for v in range(1, self.n + 1) if not used >> v & 1]
+        values = [v for v in range(1, self.n + 1) if not used >> v & 1]   # pruning: not in row or column
         rng.shuffle(values)
         return values
 
@@ -44,18 +45,19 @@ class LatinSquareSearch:
         self.nodes += 1
         if k == self.depth:
             return True
-        if limit is not None and k == limit:
+        if limit is not None and k == limit:   # depth limit reached (only used by IDDFS)
             return False
         r, c = self.cells[k]
         for v in self._candidates(k, rng):
             self._put(r, c, v)
             if self._dfs(k + 1, limit, rng):
                 return True
-            self._remove(r, c, v)
+            self._remove(r, c, v)              # backtrack
         return False
 
     def iddfs(self, trace=False):
         iterations = []
+        # IDDFS: depth-limited DFS with limit 0, 1, 2, ... until a solution is found
         for limit in range(self.depth + 1):
             before = self.nodes
             found = self._dfs(0, limit, random.Random(SEED))
@@ -71,7 +73,7 @@ class LatinSquareSearch:
         return self._dfs(0, None, random.Random(SEED))
 
     def count(self):
-        return self._count(0)
+        return self._count(0)   # counts reduced squares; total = n! * (n-1)! * reduced
 
     def _count(self, k):
         self.nodes += 1

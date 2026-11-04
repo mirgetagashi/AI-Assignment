@@ -301,23 +301,34 @@ python problemi3_latin_square/latin_square.py 5 --count     # count all Latin sq
 
 ## Problem 4: Search Trees
 
-Each tree is built with BFS. The root is the start state, and each child is one action away. Repeated states are marked and not expanded (otherwise the tree is infinite), and invalid states cut the branch.
+8-Puzzle and M&C are built with BFS; RWS is solved with DFS + backtracking. The root is the start state, and each child is one action away. Repeated states are marked and not expanded (otherwise the tree is infinite), invalid states cut the branch, and in the RWS tree every failed subtree is collapsed into one box with its node count.
+
+**RWS instance:** 4 employees share one 28-day cycle (employee e in week w works sequence week (e + w) mod 4). Shifts D, N, O (off). Mon–Fri: 2 D, 1 N, 1 O; Sat–Sun: 1 D, 1 N, 2 O. Work blocks 3–5 days, rest blocks 1–3 days, N → D forbidden, cyclic boundary included.
 
 | | 8-Puzzle | Missionaries & Cannibals | RWS |
 |---|---|---|---|
-| State | 3×3 board | (M, C, B) on the left bank | partial schedule (3 employees × 7 days) |
-| Actions | move the blank Up/Down/Left/Right | boat carries 1–2 people | assign D, N or – to the next cell |
-| Tree | 27 nodes, 8 repeated | 49 nodes, 18 invalid, 15 repeated | day 1: 6 of 27 valid; day 2: 4 of 6 |
-| Solution | depth 3: Right → Down → Right | depth 11 (2 solutions) | depth 21 (all cells) |
-| Fitting algorithm | BFS / IDDFS | BFS | DFS + backtracking |
+| State | 3×3 board | (M, C, B) on the left bank | partial 28-day cycle (4 weeks × 7 days) |
+| Actions | move the blank Up/Down/Left/Right | boat carries 1–2 people | assign D, N or O to the next cell (day by day) |
+| Search | BFS | BFS | DFS + backtracking |
+| Statistics | 27 generated, 9 expanded, 8 repeated, 19 unique states | 49 generated, 14 expanded, 18 invalid, 15 repeated, 25 unique states | 51 DFS calls, 119 tried, 69 rejected, 22 backtracked |
+| Solution | depth 3: Right → Down → Right | depth 11 (2 solutions) | depth 28 |
+| Check | validator + independent BFS: shortest = 3 | validator + independent BFS: shortest = 11 | validator + independent solver: same cycle |
 
-The trees are in [`problemi4_search_trees/pemet/`](problemi4_search_trees/pemet/):
+RWS solution (rows = consecutive weeks of the cycle):
 
-![Missionaries and Cannibals search tree](problemi4_search_trees/pemet/missionaries_cannibals.png)
+```
+     Mon Tue Wed Thu Fri Sat Sun
+W1    D   D   D   D   D   O   D
+W2    D   D   D   D   O   O   O
+W3    N   N   N   O   D   D   N
+W4    O   O   O   N   N   N   O
+```
+
+Trees (PDF): [8-Puzzle](problemi4_search_trees/pemet/8puzzle.pdf) · [Missionaries & Cannibals](problemi4_search_trees/pemet/missionaries_cannibals.pdf) · [RWS](problemi4_search_trees/pemet/rws.pdf)
 
 ```bash
-python problemi4_search_trees/search_trees.py mc        # tree in the terminal
-python problemi4_search_trees/search_trees.py mc --dot | dot -Tpng -o mc.png   # drawing (needs Graphviz)
+python problemi4_search_trees/search_trees.py rws                       # tree, statistics and checks in the terminal
+python problemi4_search_trees/search_trees.py rws --pdf rws.pdf         # tree as PDF (needs Graphviz)
 ```
 
 **Conclusion.** When the solution can be shallow (8-Puzzle, M&C), BFS/IDDFS find the shortest one. When every solution is at maximum depth (Golfers, Sudoku, Latin Square, RWS), DFS with backtracking is the natural choice.

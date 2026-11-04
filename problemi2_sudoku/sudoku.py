@@ -56,12 +56,12 @@ def is_valid_solution(grid, puzzle):
 
 def bfs(puzzle):
     stats = {"expanded": 0, "max_queue": 1, "dead_ends": 0}
-    queue = deque([puzzle])
+    queue = deque([puzzle])                      # FIFO queue -> breadth-first
     t0 = time.perf_counter()
     while queue:
-        state = queue.popleft()
+        state = queue.popleft()                  # always expand the oldest state first
         stats["expanded"] += 1
-        cell = state.index(0)
+        cell = state.index(0)                    # first empty cell in reading order (no MRV)
 
         used = set()
         for i in ROWS[ROW_OF[cell]]:
@@ -70,14 +70,15 @@ def bfs(puzzle):
             used.add(state[i])
         for i in BOXES[BOX_OF[cell]]:
             used.add(state[i])
+        # Pruning (the backtracking part of BFS): only digits that no peer already has
         digits = [d for d in range(1, 10) if d not in used]
 
-        if not digits:
+        if not digits:                           # dead end: this branch is cut
             stats["dead_ends"] += 1
             continue
         for d in digits:
             child = state[:cell] + bytes((d,)) + state[cell + 1:]
-            if 0 not in child:
+            if 0 not in child:                   # goal test as soon as the child is created
                 stats["seconds"] = time.perf_counter() - t0
                 return child, stats
             queue.append(child)

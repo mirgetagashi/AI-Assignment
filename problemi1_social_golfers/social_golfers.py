@@ -5,7 +5,7 @@ import time
 from itertools import combinations
 
 
-SEED = 0
+SEED = 0  # fixed seed: the shuffled order is the same on every run
 
 
 def solve(g, p, w):
@@ -13,12 +13,13 @@ def solve(g, p, w):
     n = g * p
     gp = n
     total = w * gp
-    ALL = (1 << n) - 1
-    met = [0] * n
-    slots = [-1] * total
+    ALL = (1 << n) - 1         # sets of golfers are bitmasks: bit i = golfer i
+    met = [0] * n              # met[i] = everyone golfer i has already played with
+    slots = [-1] * total       # the schedule, slot by slot: week -> group -> position
     nodes = 0
     sys.setrecursionlimit(max(sys.getrecursionlimit(), total + 1000))
 
+    # Symmetry breaking: week 1 is fixed to {1..4} {5..8} ... (any schedule can be renamed to this)
     for x in range(n):
         slots[x] = x
     for grp in range(g):
@@ -29,7 +30,7 @@ def solve(g, p, w):
     def dfs(slot, week_mask, group_mask, forbid, last):
         nonlocal nodes
         nodes += 1
-        if slot == total:
+        if slot == total:                     # goal test: every slot is filled
             return True
 
         week, rem = divmod(slot, gp)
@@ -40,17 +41,18 @@ def solve(g, p, w):
             if group == 0:
                 week_mask = 0
             free = ALL & ~week_mask
-            cands = free & -free
+            cands = free & -free              # a group always starts with the smallest free golfer
         else:
+            # Pruning: not played this week (H1) and has met nobody in this group (H2)
             cands = ALL & ~week_mask & ~forbid
-            cands &= ~((1 << (last + 1)) - 1)
+            cands &= ~((1 << (last + 1)) - 1)   # increasing order inside a group
 
         order = []
         while cands:
             low = cands & -cands
             cands ^= low
             order.append(low.bit_length() - 1)
-        rng.shuffle(order)
+        rng.shuffle(order)                    # shuffled order avoids the 'two halves' trap (not a heuristic)
 
         for x in order:
             low = 1 << x
@@ -63,9 +65,10 @@ def solve(g, p, w):
                 met[b.bit_length() - 1] |= low
                 m ^= b
 
-            if dfs(slot + 1, week_mask | low, group_mask | low, forbid | met[x], x):
+            if dfs(slot + 1, week_mask | low, group_mask | low, forbid | met[x], x):   # go deeper
                 return True
 
+            # Backtrack: undo the meetings of x and free the slot, then try the next candidate
             met[x] &= ~group_mask
             m = group_mask
             while m:
