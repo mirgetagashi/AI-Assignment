@@ -6,18 +6,12 @@ import time
 
 
 SEED = 0
-TIME_LIMIT = 120.0
-
-
-class Timeout(Exception):
-    pass
 
 
 class LatinSquareSearch:
 
     def __init__(self, n):
         self.n = n
-        self.deadline = time.perf_counter() + TIME_LIMIT
         self.grid = [[0] * n for _ in range(n)]
         self.row_used = [0] * n
         self.col_used = [0] * n
@@ -48,8 +42,6 @@ class LatinSquareSearch:
 
     def _dfs(self, k, limit, rng):
         self.nodes += 1
-        if self.nodes & 0xFFF == 0 and time.perf_counter() > self.deadline:
-            raise Timeout
         if k == self.depth:
             return True
         if limit is not None and k == limit:
@@ -83,8 +75,6 @@ class LatinSquareSearch:
 
     def _count(self, k):
         self.nodes += 1
-        if self.nodes & 0xFFF == 0 and time.perf_counter() > self.deadline:
-            raise Timeout
         if k == self.depth:
             return 1
         r, c = self.cells[k]
@@ -122,8 +112,8 @@ def main():
     if a.count:
         try:
             reduced = s.count()
-        except Timeout:
-            print(f"Time limit reached after {TIME_LIMIT:.0f} s ({s.nodes:,} nodes).")
+        except KeyboardInterrupt:
+            print(f"Stopped by user after {time.perf_counter() - t0:.0f} s ({s.nodes:,} nodes).")
             return
         total = math.factorial(a.n) * math.factorial(a.n - 1) * reduced
         print(f"n = {a.n}")
@@ -136,9 +126,9 @@ def main():
             found, iters = s.iddfs(a.trace)
         else:
             found, iters = s.backtracking(), None
-    except Timeout:
-        print(f"Time limit reached after {TIME_LIMIT:.0f} s ({s.nodes:,} nodes). "
-              + ("IDDFS wastes time visiting all levels before depth "
+    except KeyboardInterrupt:
+        print(f"Stopped by user after {time.perf_counter() - t0:.0f} s ({s.nodes:,} nodes). "
+              + ("IDDFS spends its time on all levels before depth "
                  f"{s.depth}; try --method backtracking." if a.method == "iddfs" else ""))
         return
     secs = time.perf_counter() - t0

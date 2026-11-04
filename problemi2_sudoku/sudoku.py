@@ -54,8 +54,8 @@ def is_valid_solution(grid, puzzle):
     return all(sorted(grid[i] for i in unit) == list(range(1, 10)) for unit in UNITS)
 
 
-def bfs(puzzle, max_queue=3_000_000):
-    stats = {"expanded": 0, "max_queue": 1, "dead_ends": 0, "memory_limit": False}
+def bfs(puzzle):
+    stats = {"expanded": 0, "max_queue": 1, "dead_ends": 0}
     queue = deque([puzzle])
     t0 = time.perf_counter()
     while queue:
@@ -83,9 +83,6 @@ def bfs(puzzle, max_queue=3_000_000):
             queue.append(child)
         if len(queue) > stats["max_queue"]:
             stats["max_queue"] = len(queue)
-            if len(queue) > max_queue:
-                stats["memory_limit"] = True
-                break
     stats["seconds"] = time.perf_counter() - t0
     return None, stats
 
@@ -120,10 +117,7 @@ def run(name, level, puzzle):
         print(f"BFS: solved in {st['seconds']:.2f} s | {st['expanded']:,} states expanded | "
               f"max queue {st['max_queue']:,} states (~{mb:.1f} MB) | check: {'valid' if ok else 'NOT VALID'}\n")
     else:
-        if st["memory_limit"]:
-            print(f"BFS: not solved (memory limit: {st['max_queue']:,} states, ~{mb:.0f} MB)\n")
-        else:
-            print(f"BFS: no solution exists (the whole tree was searched, {st['expanded']:,} states)\n")
+        print(f"BFS: no solution exists (the whole tree was searched, {st['expanded']:,} states)\n")
     return solution is not None
 
 
@@ -147,4 +141,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nStopped by user.")

@@ -94,18 +94,20 @@ $$\text{eval}(S) = \text{number of repeated meetings}$$
 
 A pair that meets once adds 0, twice adds 1, three times adds 2, and so on. **eval = 0 ⇔ valid schedule.**
 
-### Landscape 
+### Landscape (simple)
 
 - **Neighbour:** swap two golfers from different groups of the same week.
 - **Picture:** a random 10-week schedule has on average ~163 repeated meetings, while a solution has 0. Solutions are extremely rare, and many neighbours have the same eval (flat areas). So random search does not work; we need systematic search with pruning.
 
 ### Result
 
-DFS finds **7 weeks in ~0.1 s** (62,268 nodes). 8 weeks are not found within 60 s.
+DFS finds **7 weeks in ~0.1 s** (62,268 nodes). 8 weeks were not found even after ~930 million nodes (12 runs with different seeds, ~27 minutes in total): near the bound 10, solutions are so rare that uninformed search does not reach them in reasonable time.
+
+The search has **no time limit**. To stop it, press **Ctrl + C**: the program then prints what it found so far (with `--max`, the best number of weeks and its schedule).
 
 ```bash
 python problemi1_social_golfers/social_golfers.py           # 32 golfers, 7 weeks
-python problemi1_social_golfers/social_golfers.py 8 4 --max # try w = 1, 2, 3, ...
+python problemi1_social_golfers/social_golfers.py 8 4 --max # try w = 1, 2, 3, ... (stop with Ctrl + C at w = 8)
 ```
 
 ---
@@ -182,7 +184,7 @@ $$\text{eval}(G) = \text{number of repeated digits in all rows, columns and boxe
 
 Example: a column with (5, 3, 5, 1, 9, 5, 2, 8, 7) has 9 cells and 7 different digits → 2 repetitions. **eval = 0 ⇔ solution.**
 
-### Landscape 
+### Landscape (simple)
 
 - **Neighbour:** swap two non-given cells in the same row.
 - **Picture:** for a small 4×4 Sudoku, only 1 grid out of 72 is a solution. For 9×9 there is 1 solution among 10¹⁹–10³⁰ grids, and about a quarter of the neighbours have the same eval. The solution is a single "hole", so systematic search is needed.
@@ -270,7 +272,7 @@ Example for n = 3:
 
 **eval = 0 ⇔ Latin square.**
 
-### Landscape 
+### Landscape (simple)
 
 - **Neighbour:** swap two numbers in the same row.
 - **Picture:** for n = 3 there are 216 grids (rows as permutations) and 12 are solutions. For n = 4, 576 of 331,776 grids are solutions (0.17 %). The share of solutions falls fast as n grows, and there are flat areas where no swap helps.

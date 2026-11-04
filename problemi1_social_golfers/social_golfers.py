@@ -6,11 +6,6 @@ from itertools import combinations
 
 
 SEED = 0
-TIME_LIMIT = 60.0
-
-
-class Timeout(Exception):
-    pass
 
 
 def solve(g, p, w):
@@ -22,7 +17,6 @@ def solve(g, p, w):
     met = [0] * n
     slots = [-1] * total
     nodes = 0
-    deadline = time.perf_counter() + TIME_LIMIT
     sys.setrecursionlimit(max(sys.getrecursionlimit(), total + 1000))
 
     for x in range(n):
@@ -35,8 +29,6 @@ def solve(g, p, w):
     def dfs(slot, week_mask, group_mask, forbid, last):
         nonlocal nodes
         nodes += 1
-        if nodes & 0xFFF == 0 and time.perf_counter() > deadline:
-            raise Timeout
         if slot == total:
             return True
 
@@ -83,10 +75,7 @@ def solve(g, p, w):
             slots[slot] = -1
         return False
 
-    try:
-        found = dfs(gp, 0, 0, 0, -1)
-    except Timeout:
-        return None, nodes, "timeout"
+    found = dfs(gp, 0, 0, 0, -1)
     if not found:
         return None, nodes, "infeasible"
     schedule = [[slots[wk * gp + gi * p: wk * gp + (gi + 1) * p] for gi in range(g)]
@@ -132,7 +121,11 @@ def main():
 
     if not a.max:
         t0 = time.perf_counter()
-        schedule, nodes, status = solve(g, p, a.w)
+        try:
+            schedule, nodes, status = solve(g, p, a.w)
+        except KeyboardInterrupt:
+            print(f"w = {a.w}: stopped by user after {time.perf_counter() - t0:.0f} s")
+            return
         print(f"w = {a.w}: {status}  ({nodes:,} nodes, {time.perf_counter() - t0:.2f} s)\n")
         if schedule:
             show(schedule)
@@ -140,9 +133,15 @@ def main():
         return
 
     best = None
+    status = None
     for w in range(1, bound + 1):
         t0 = time.perf_counter()
-        schedule, nodes, status = solve(g, p, w)
+        try:
+            schedule, nodes, status = solve(g, p, w)
+        except KeyboardInterrupt:
+            print(f"w = {w:>2}: stopped by user after {time.perf_counter() - t0:.0f} s")
+            status = "stopped"
+            break
         print(f"w = {w:>2}: {status:9} ({nodes:>12,} nodes, {time.perf_counter() - t0:6.2f} s)", flush=True)
         if schedule is None:
             break
