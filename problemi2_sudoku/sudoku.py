@@ -36,6 +36,18 @@ def parse(text):
     return bytes(0 if ch in ".0" else int(ch) for ch in chars)
 
 
+def find_conflicts(puzzle):
+    names = [f"row {k + 1}" for k in range(9)] + [f"column {k + 1}" for k in range(9)] \
+        + [f"box {k + 1}" for k in range(9)]
+    conflicts = []
+    for name, unit in zip(names, UNITS):
+        digits = [puzzle[i] for i in unit if puzzle[i]]
+        for d in sorted(set(digits)):
+            if digits.count(d) > 1:
+                conflicts.append(f"{name} has digit {d} {digits.count(d)} times")
+    return conflicts
+
+
 def is_valid_solution(grid, puzzle):
     if 0 in grid or any(p and p != s for p, s in zip(puzzle, grid)):
         return False
@@ -43,7 +55,7 @@ def is_valid_solution(grid, puzzle):
 
 
 def bfs(puzzle, max_queue=3_000_000):
-    stats = {"expanded": 0, "max_queue": 1, "dead_ends": 0}
+    stats = {"expanded": 0, "max_queue": 1, "dead_ends": 0, "memory_limit": False}
     queue = deque([puzzle])
     t0 = time.perf_counter()
     while queue:
@@ -72,6 +84,7 @@ def bfs(puzzle, max_queue=3_000_000):
         if len(queue) > stats["max_queue"]:
             stats["max_queue"] = len(queue)
             if len(queue) > max_queue:
+                stats["memory_limit"] = True
                 break
     stats["seconds"] = time.perf_counter() - t0
     return None, stats
@@ -92,6 +105,12 @@ def side_by_side(puzzle, solution):
 
 
 def run(name, level, puzzle):
+    conflicts = find_conflicts(puzzle)
+    if conflicts:
+        print(f"{name} ({level}, {puzzle.count(0)} empty cells)")
+        print(side_by_side(puzzle, None))
+        print("Invalid puzzle, not searched: " + "; ".join(conflicts) + "\n")
+        return False
     solution, st = bfs(puzzle)
     mb = st["max_queue"] * (sys.getsizeof(puzzle) + 8) / 1e6
     print(f"{name} ({level}, {puzzle.count(0)} empty cells)")
@@ -101,7 +120,10 @@ def run(name, level, puzzle):
         print(f"BFS: solved in {st['seconds']:.2f} s | {st['expanded']:,} states expanded | "
               f"max queue {st['max_queue']:,} states (~{mb:.1f} MB) | check: {'valid' if ok else 'NOT VALID'}\n")
     else:
-        print(f"BFS: not solved (memory limit: {st['max_queue']:,} states, ~{mb:.0f} MB)\n")
+        if st["memory_limit"]:
+            print(f"BFS: not solved (memory limit: {st['max_queue']:,} states, ~{mb:.0f} MB)\n")
+        else:
+            print(f"BFS: no solution exists (the whole tree was searched, {st['expanded']:,} states)\n")
     return solution is not None
 
 

@@ -54,6 +54,12 @@ Example, week 1:
 | **H1** | Every golfer plays **exactly once** per week |
 | **H2** | Every pair of golfers is in the same group **at most once** over all weeks |
 
+**Formally**, with $x_{j,g,v} \in D = \{1, \dots, 32\}$ and $G_{j,g} = \{x_{j,g,v} : v = 1..4\}$ the players of group g in week j:
+
+$$\text{H1:}\quad \forall j,\ \forall i \in D:\quad \big|\{(g, v) : x_{j,g,v} = i\}\big| = 1$$
+
+$$\text{H2:}\quad \forall i \neq k \in D:\quad \big|\{(j, g) : i \in G_{j,g} \land k \in G_{j,g}\}\big| \le 1$$
+
 **Search space.** The number of ways to split 32 golfers into 8 groups of 4 (one week) is:
 
 $$P = \frac{32!}{(4!)^8 \cdot 8!} \approx 5.93 \times 10^{19}$$
@@ -88,7 +94,7 @@ $$\text{eval}(S) = \text{number of repeated meetings}$$
 
 A pair that meets once adds 0, twice adds 1, three times adds 2, and so on. **eval = 0 ⇔ valid schedule.**
 
-### Landscape (simple)
+### Landscape 
 
 - **Neighbour:** swap two golfers from different groups of the same week.
 - **Picture:** a random 10-week schedule has on average ~163 repeated meetings, while a solution has 0. Solutions are extremely rare, and many neighbours have the same eval (flat areas). So random search does not work; we need systematic search with pruning.
@@ -148,6 +154,16 @@ Every action fills one cell, so if the puzzle has k empty cells, **every solutio
 | H3 | Each digit at most once in every 3×3 box |
 | H4 | The given cells do not change |
 
+**Formally**, with $x_{r,c} \in D = \{1, \dots, 9\}$ (r, c = 0..8), $B_{p,q} = \{(r, c) : 3p \le r \le 3p+2,\ 3q \le c \le 3q+2\}$ the 3×3 boxes, and $a_{r,c}$ the given digits:
+
+$$\text{H1:}\quad \forall r,\ \forall c \neq c':\quad x_{r,c} \neq x_{r,c'}$$
+
+$$\text{H2:}\quad \forall c,\ \forall r \neq r':\quad x_{r,c} \neq x_{r',c}$$
+
+$$\text{H3:}\quad \forall p, q,\ \forall (r,c) \neq (r',c') \in B_{p,q}:\quad x_{r,c} \neq x_{r',c'}$$
+
+$$\text{H4:}\quad \forall (r,c) \text{ given}:\quad x_{r,c} = a_{r,c}$$
+
 **Search space** for the hardest puzzle (Inkala, 60 empty cells):
 
 | Representation | Size |
@@ -166,7 +182,7 @@ $$\text{eval}(G) = \text{number of repeated digits in all rows, columns and boxe
 
 Example: a column with (5, 3, 5, 1, 9, 5, 2, 8, 7) has 9 cells and 7 different digits → 2 repetitions. **eval = 0 ⇔ solution.**
 
-### Landscape (simple)
+### Landscape 
 
 - **Neighbour:** swap two non-given cells in the same row.
 - **Picture:** for a small 4×4 Sudoku, only 1 grid out of 72 is a solution. For 9×9 there is 1 solution among 10¹⁹–10³⁰ grids, and about a quarter of the neighbours have the same eval. The solution is a single "hole", so systematic search is needed.
@@ -174,6 +190,8 @@ Example: a column with (5, 3, 5, 1, 9, 5, 2, 8, 7) has 9 cells and 7 different d
 ### Result
 
 **12/12 puzzles solved** (4 easy, 4 medium, 4 hard). Easy needs < 1,000 states, hard up to 2 million (Inkala, ~4 s). BFS keeps a whole level in memory (up to ~44 MB), so memory is its limit.
+
+**Input check.** Before searching, the program checks that the givens do not already break a rule. An invalid puzzle is reported instead of being searched, e.g. `Invalid puzzle, not searched: column 3 has digit 3 2 times`. If the search finishes without a solution, it says so (`no solution exists`) instead of showing a half-filled grid.
 
 ```bash
 python problemi2_sudoku/sudoku.py               # all puzzles
@@ -215,6 +233,14 @@ Every solution lies at the **same depth**: d = (n − 1)², which is 16 for n = 
 | H1 | Every row contains each number exactly once |
 | H2 | Every column contains each number exactly once |
 
+**Formally**, with $x_{r,c} \in D = \{1, \dots, n\}$:
+
+$$\text{H1:}\quad \forall r,\ \forall c \neq c':\quad x_{r,c} \neq x_{r,c'}$$
+
+$$\text{H2:}\quad \forall c,\ \forall r \neq r':\quad x_{r,c} \neq x_{r',c}$$
+
+(With n cells in a row and n possible values, "all different" means every number appears exactly once.)
+
 Unlike Sudoku, there are no boxes and no given cells, so a solution **always exists**.
 
 **Search space:**
@@ -244,7 +270,7 @@ Example for n = 3:
 
 **eval = 0 ⇔ Latin square.**
 
-### Landscape (simple)
+### Landscape 
 
 - **Neighbour:** swap two numbers in the same row.
 - **Picture:** for n = 3 there are 216 grids (rows as permutations) and 12 are solutions. For n = 4, 576 of 331,776 grids are solutions (0.17 %). The share of solutions falls fast as n grows, and there are flat areas where no swap helps.
@@ -255,9 +281,18 @@ Example for n = 3:
 - **Backtracking:** solves even n = 30 in 0.2 s.
 - IDDFS gives no advantage here: all solutions are at the bottom of the tree, so every iteration before the last one is wasted work.
 
+**Correctness check (`--count`).** DFS can also count *all* reduced Latin squares; every reduced square gives n! · (n − 1)! Latin squares (rename the numbers, reorder rows 2..n). The counts match the known values:
+
+| n | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|
+| Reduced squares found | 1 | 4 | 56 | 9,408 |
+| All Latin squares | 12 | 576 | 161,280 | 812,851,200 |
+| Time | < 0.01 s | < 0.01 s | < 0.01 s | 0.13 s |
+
 ```bash
 python problemi3_latin_square/latin_square.py 5
 python problemi3_latin_square/latin_square.py 20 --method backtracking
+python problemi3_latin_square/latin_square.py 5 --count     # count all Latin squares
 ```
 
 ---

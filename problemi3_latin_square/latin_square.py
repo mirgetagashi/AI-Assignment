@@ -1,4 +1,5 @@
 import argparse
+import math
 import random
 import sys
 import time
@@ -77,6 +78,25 @@ class LatinSquareSearch:
     def backtracking(self):
         return self._dfs(0, None, random.Random(SEED))
 
+    def count(self):
+        return self._count(0)
+
+    def _count(self, k):
+        self.nodes += 1
+        if self.nodes & 0xFFF == 0 and time.perf_counter() > self.deadline:
+            raise Timeout
+        if k == self.depth:
+            return 1
+        r, c = self.cells[k]
+        used = self.row_used[r] | self.col_used[c]
+        total = 0
+        for v in range(1, self.n + 1):
+            if not used >> v & 1:
+                self._put(r, c, v)
+                total += self._count(k + 1)
+                self._remove(r, c, v)
+        return total
+
 
 def is_latin_square(grid):
     n = len(grid)
@@ -90,6 +110,8 @@ def main():
     ap.add_argument("n", type=int, nargs="?", default=5, help="size of the square (default 5)")
     ap.add_argument("--method", choices=["iddfs", "backtracking"], default="iddfs")
     ap.add_argument("--trace", action="store_true", help="print the nodes of every iteration (IDDFS)")
+    ap.add_argument("--count", action="store_true",
+                    help="count ALL Latin squares of size n (checks correctness against known values)")
     a = ap.parse_args()
     if a.n < 1:
         sys.exit("n must be >= 1")
@@ -97,6 +119,18 @@ def main():
 
     s = LatinSquareSearch(a.n)
     t0 = time.perf_counter()
+    if a.count:
+        try:
+            reduced = s.count()
+        except Timeout:
+            print(f"Time limit reached after {TIME_LIMIT:.0f} s ({s.nodes:,} nodes).")
+            return
+        total = math.factorial(a.n) * math.factorial(a.n - 1) * reduced
+        print(f"n = {a.n}")
+        print(f"Reduced Latin squares (first row and column = 1..n): {reduced:,}")
+        print(f"All Latin squares = n! * (n-1)! * reduced = {total:,}")
+        print(f"DFS visited {s.nodes:,} nodes in {time.perf_counter() - t0:.3f} s")
+        return
     try:
         if a.method == "iddfs":
             found, iters = s.iddfs(a.trace)
